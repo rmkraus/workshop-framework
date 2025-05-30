@@ -1,5 +1,6 @@
 services:
   devx:
+    image: ghcr.io/rmkraus/workshop-framework/devx:main
     build:
       context: ../workshop-framework
       dockerfile: Dockerfile
