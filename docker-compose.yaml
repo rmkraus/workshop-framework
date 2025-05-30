@@ -1,10 +1,11 @@
 services:
-  aidevcontainer:
+  devx:
+    image: ghcr.io/rmkraus/workshop-framework/devx:main
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - .:/project:cached
+    # volumes:
+    #   - .:/project:cached
     ports:
       - 8888:8888
 
