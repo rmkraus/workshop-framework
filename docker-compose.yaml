@@ -1,11 +1,10 @@
 services:
   devx:
-    image: ghcr.io/rmkraus/workshop-framework/devx:main
     build:
-      context: .
+      context: ../workshop-framework
       dockerfile: Dockerfile
-    # volumes:
-    #   - .:/project:cached
+    volumes:
+      - ../workshop-framework:/project:cached
     ports:
       - 8888:8888
 
