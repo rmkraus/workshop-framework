@@ -2,7 +2,7 @@ services:
   devx:
     image: ghcr.io/rmkraus/workshop-framework/devx:main
     build:
-      context: ../workshop-framework
+      context: .
       dockerfile: Dockerfile
     volumes:
       - ../workshop-framework:/project:cached
