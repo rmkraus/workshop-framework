@@ -1,0 +1,26 @@
+name: Docker Build CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up variables
+      id: vars
+      run: |
+        echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "branch=$(echo ${GITHUB_REF##*/} | tr '/' '-')" >> $GITHUB_OUTPUT
+
+    - name: Build and tag the Docker image
+      run: |
+        docker build . --file Dockerfile --tag devx:${{ steps.vars.outputs.timestamp }}
+        docker tag devx:${{ steps.vars.outputs.timestamp }} devx:${{ steps.vars.outputs.branch }}
+
