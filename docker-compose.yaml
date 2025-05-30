@@ -1,0 +1,10 @@
+services:
+  aidevcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/project:cached
+    ports:
+      - 8888:8888
+

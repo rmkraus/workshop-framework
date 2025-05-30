@@ -1,0 +1,14 @@
+# ref: https://jupyter-app-launcher.readthedocs.io/en/stable/usage.html
+
+- title: Visual Search and Summarization
+  description: Learn to implement VSS at your company.
+  source: http://localhost:$PORT/
+  cwd: "/project/.devx"
+  type: local-server
+  args:
+    - "python3"
+    - "-m"
+    - "http.server"
+    - $PORT
+  icon: /project/.devx/_static/img/nvidia-icon.svg
+  catalog: NVIDIA DevX Workshops
