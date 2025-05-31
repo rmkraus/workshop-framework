@@ -1,7 +1,7 @@
 # ref: https://jupyter-app-launcher.readthedocs.io/en/stable/usage.html
 
-- title: Visual Search and Summarization
-  description: Learn to implement VSS at your company.
+- title: Simple Workshop
+  description: Create a workshop.
   source: http://localhost:$PORT/
   cwd: "/project/.devx"
   type: local-server

@@ -7,10 +7,6 @@ WORKDIR /setup
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-
-### DEVX WORKSHOP INSTALL
-
 # Create a non-root user and group
 RUN groupadd -r nvidia && \
     useradd -m -r -g nvidia nvidia && \

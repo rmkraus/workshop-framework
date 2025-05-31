@@ -1,0 +1,9 @@
+[project]
+name = "simple-workshop"
+description = "Simple Workshop Example"
+version = "0.1.0"
+
+[tool.brev]
+instance_type = "l40s-48gb.1x"
+workspace_group_id = "crusoe-brev-wg"
+ports = [ { name = "jupyter", port = 8888 } ]
