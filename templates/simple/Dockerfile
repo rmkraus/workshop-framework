@@ -1,5 +1,7 @@
 FROM python:3.12
 
+RUN apt-get update && apt-get upgrade -y && apt-get clean
+
 # Work in the setup directory directory
 WORKDIR /setup
 
@@ -8,8 +10,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-root user and group
-RUN groupadd -r nvidia && \
-    useradd -m -r -g nvidia nvidia && \
+RUN groupadd -r nvidia -g 1000 && \
+    useradd -m -r -g nvidia -u 1000 nvidia && \
     mkdir -p /project && \
     chown -R nvidia:nvidia /project
 USER nvidia

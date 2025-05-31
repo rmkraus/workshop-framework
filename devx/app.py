@@ -25,21 +25,26 @@ def main() -> None:
     # Publish subcommand
     publish_parser = subparsers.add_parser("publish", help="Publish a workshop to Brev")
     publish_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
-    publish_parser.add_argument("--dry-run", action="store_true", help="Show API request details without making the request")
+    publish_parser.add_argument(
+        "--dry-run", action="store_true", help="Show API request details without making the request")
 
     # Sync subcommand
     _ = subparsers.add_parser("sync", help="Synchronize the cached workshop files.")
 
     args = parser.parse_args()
 
+    if args.command == "init":
+        init(args)
+        args.command = "sync"
+
+    workspace = BrevWorkspace()
+    project = Project()
 
     match args.command:
-        case "init":
-            init(args)
         case "publish":
-            publish(args, BrevWorkspace(), Project())
+            publish(args, workspace, project)
         case "sync":
-            sync(args, BrevWorkspace(), Project())
+            sync(workspace, project)
 
 
 if __name__ == "__main__":

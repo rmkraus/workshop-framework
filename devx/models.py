@@ -41,9 +41,6 @@ def _relative_to_root() -> str:
     if not pyproject_dir:
         raise RuntimeError("Could not find pyproject.toml")
 
-    print(f"git_dir: {git_dir}")
-    print(f"pyproject_dir: {pyproject_dir}")
-
     # Get relative path between the two
     try:
         return str(pyproject_dir.relative_to(git_dir))

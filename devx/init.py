@@ -62,7 +62,7 @@ def find_template_dir(extracted_dir: Path, template_name: str) -> Path:
     Raises:
         SystemExit: If template directory is not found.
     """
-    template_dir = next(extracted_dir.glob("*")) / TEMPLATE_REPO[1] / template_name
+    template_dir = next(extracted_dir.glob("*/")) / TEMPLATE_REPO[1] / template_name
     if not template_dir.exists():
         print(f"❌ Template not found: {template_name}")
         sys.exit(1)

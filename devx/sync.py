@@ -1,6 +1,5 @@
 """Workshop file synchronization functionality."""
 
-import argparse
 from pathlib import Path
 from typing import List
 
@@ -10,6 +9,7 @@ from devx.models import BrevWorkspace, Port, Project
 
 DEVX_DIR = Path('.devx')
 COMPOSE_PATH = './docker-compose.yaml'
+TARGET_BRANCH = 'main'
 
 
 def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> str:
@@ -33,7 +33,7 @@ def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> 
     # Add devx service
     repo_name = image_url.split('/')[-1]
     compose['services']['devx'] = {
-        "image": image_url,
+        "image": image_url + f"/devx:{TARGET_BRANCH}",
         "ports": [f"{port.port}:{port.port}" for port in ports],
         "volumes": [f"../{repo_name}:/project:cached"]
     }
@@ -41,7 +41,7 @@ def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> 
     return yaml.dump(compose)
 
 
-def sync(_: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
+def sync(workspace: BrevWorkspace, project: Project) -> None:
     """Synchronize the cached workshop files.
 
     Args:
