@@ -52,7 +52,7 @@ def create_launchable(workspace: BrevWorkspace, project: Project) -> dict:
         "buildRequest": {
             "ports": [port.model_dump() for port in workspace.ports],
             "dockerCompose": {
-                "fileUrl": f"{project.repo_url}/blob/main/.devx/docker-compose.yaml",
+                "fileUrl": f"{project.repo_url}/raw/main/.devx/docker-compose.yaml",
                 "jupyterInstall": False,
                 "registries": []
             }
