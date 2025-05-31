@@ -2,10 +2,10 @@
 
 import argparse
 
-from init import init
-from models import BrevWorkspace, Project
-from publish import publish
-from sync import sync
+from devx.init import init
+from devx.models import BrevWorkspace, Project
+from devx.publish import publish
+from devx.sync import sync
 
 
 def main() -> None:
@@ -31,16 +31,15 @@ def main() -> None:
     _ = subparsers.add_parser("sync", help="Synchronize the cached workshop files.")
 
     args = parser.parse_args()
-    workspace = BrevWorkspace()
-    project = Project()
+
 
     match args.command:
         case "init":
             init(args)
         case "publish":
-            publish(args, workspace, project)
+            publish(args, BrevWorkspace(), Project())
         case "sync":
-            sync(args, workspace, project)
+            sync(args, BrevWorkspace(), Project())
 
 
 if __name__ == "__main__":
