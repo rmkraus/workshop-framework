@@ -19,6 +19,8 @@ def main() -> None:
     # Publish subcommand
     publish_parser = subparsers.add_parser("publish", help="Publish a workshop to Brev")
     publish_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
+    publish_parser.add_argument("--dry-run", action="store_true",
+                                help="Show API request details without making the request")
 
     # Sync subcommand
     _ = subparsers.add_parser("sync", help="Synchronize the cached workshop files.")

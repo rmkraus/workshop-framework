@@ -12,6 +12,45 @@ from pydantic_settings import (BaseSettings, PydanticBaseSettingsSource,
                                SettingsConfigDict)
 
 
+def _relative_to_root() -> str:
+    """Find the .git directory and nearest pyproject.toml, return dirs between them.
+
+    Returns:
+        Relative path between .git and pyproject.toml (exclusive).
+
+    Raises:
+        RuntimeError: If either .git or pyproject.toml cannot be found.
+        ValueError: If pyproject.toml is not under .git directory.
+    """
+    current = Path.cwd()
+    git_dir = None
+    pyproject_dir = None
+
+    # Search up the directory tree
+    while current.parent != current:
+        if (current / '.git').is_dir() and not git_dir:
+            git_dir = current
+        if (current / 'pyproject.toml').is_file() and not pyproject_dir:
+            pyproject_dir = current
+        if git_dir and pyproject_dir:
+            break
+        current = current.parent
+
+    if not git_dir:
+        raise RuntimeError("Could not find .git directory")
+    if not pyproject_dir:
+        raise RuntimeError("Could not find pyproject.toml")
+
+    print(f"git_dir: {git_dir}")
+    print(f"pyproject_dir: {pyproject_dir}")
+
+    # Get relative path between the two
+    try:
+        return str(pyproject_dir.relative_to(git_dir))
+    except ValueError as exc:
+        raise ValueError("pyproject is not under git dir") from exc
+
+
 def _infer_repo_url() -> str:
     """Infer the HTTPS URL of the repository from the git remote.
 
@@ -122,6 +161,7 @@ class BrevWorkspace(BaseSettings):
         workspace_group_id: The ID of the workspace group to use.
         storage: The storage configuration for the workspace.
         ports: The port mappings for the brev workspace.
+        relative_to_root: Whether the workspace is relative to the root.
     """
     model_config = SettingsConfigDict(pyproject_toml_table_header=('tool', 'brev'))
 
@@ -129,6 +169,7 @@ class BrevWorkspace(BaseSettings):
     workspace_group_id: str
     storage: Optional[str] = None
     ports: list[Port]
+    relative_to_root: str = Field(default_factory=_relative_to_root)
 
     @property
     def access_token(self) -> str:

@@ -1,0 +1,2 @@
+# ignore workshop build artifacts in templates
+*/.devx/docker-compose.yaml

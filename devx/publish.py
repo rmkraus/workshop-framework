@@ -1,12 +1,16 @@
 """Brev workspace publishing functionality."""
 
 import argparse
+import json
 import subprocess
 import sys
+from typing import Optional
 
 import requests
 
 from devx.models import BrevWorkspace, Project
+
+TARGET_BRANCH = "main"
 
 
 def run_brev_org():
@@ -20,12 +24,13 @@ def run_brev_org():
         raise RuntimeError(f"❌ `brev org` failed with exit code {e.returncode}") from e
 
 
-def create_launchable(workspace: BrevWorkspace, project: Project) -> dict:
+def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool = False) -> Optional[str]:
     """Create a Brev launchable workspace.
 
     Args:
         workspace: The workspace configuration.
         project: The project configuration.
+        dry_run: If True, only show the API request payload without making the request.
 
     Returns:
         The launchable ID if successful, None otherwise.
@@ -52,20 +57,29 @@ def create_launchable(workspace: BrevWorkspace, project: Project) -> dict:
         "buildRequest": {
             "ports": [port.model_dump() for port in workspace.ports],
             "dockerCompose": {
-                "fileUrl": f"{project.repo_url}/raw/main/.devx/docker-compose.yaml",
+                "fileUrl": (
+                    f"{project.repo_url}/raw/{TARGET_BRANCH}/{workspace.relative_to_root}/"
+                    ".devx/docker-compose.yaml"
+                ),
                 "jupyterInstall": False,
                 "registries": []
             }
         },
         "file": {
             "url": project.repo_url,
-            "path": "./project"
+            "path": "./"
         }
     }
 
+    if dry_run:
+        print("\n📦 API Request Details:")
+        print(f"URL: {url}")
+        print("\nPayload:")
+        print(json.dumps(payload, indent=2))
+        return None
+
     response = requests.post(url, headers=headers, json=payload, timeout=10)
     return response.json()
-
 
 
 def publish(args: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
@@ -85,18 +99,21 @@ def publish(args: argparse.Namespace, workspace: BrevWorkspace, project: Project
     print(f"  - Storage: {workspace.storage or 'None'}")
     print(f"  - Ports: {[port.model_dump() for port in workspace.ports]}")
     print(f"  - Repository: {project.repo_url}")
-    print(f"  - Image: {project.image_url}/devx:main")
+    print(f"  - Image: {project.image_url}/devx:{TARGET_BRANCH}")
 
     if not args.yes and input("\nContinue? [y/N] ").lower() != 'y':
         print("❌ Aborted.")
         sys.exit(1)
 
     print("\n📦 Creating launchable...")
-    api_response = create_launchable(workspace, project)
-    if not api_response.get("id"):
-        print("❌ Failed to create launchable.")
-        print(f"Server response: {api_response}")
-        sys.exit(1)
+    api_response = create_launchable(workspace, project, dry_run=args.dry_run)
+    if not api_response or not api_response.get("id"):
+        if not args.dry_run:
+            print("❌ Failed to create launchable.")
+            print(f"Server response: {api_response}")
+            sys.exit(1)
+        return
 
-    print(f"\n✅ Launchable created with ID: {api_response.get('id')}")
-    print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get('id')}")
+    if not args.dry_run:
+        print(f"\n✅ Launchable created with ID: {api_response.get('id')}")
+        print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get('id')}")
