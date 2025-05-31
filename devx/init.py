@@ -88,7 +88,7 @@ def copy_directory(src: Path, dest: Path, force: bool) -> None:
         print(f"⚠️  {dest} already exists. Use --force to overwrite.")
         sys.exit(1)
 
-    print(f"📝 Copying {src} to {dest}...")
+    print(f"📝 Copying {dest}...")
     shutil.copytree(src, dest, dirs_exist_ok=force)
 
 
@@ -104,7 +104,7 @@ def copy_file(src: Path, dest: Path, force: bool) -> None:
         if dest.exists() and not force:
             print(f"⚠️  {dest} already exists. Use --force to overwrite.")
         else:
-            print(f"📝 Copying {src} to {dest}...")
+            print(f"📝 Copying {dest}...")
             shutil.copy2(src, dest)
 
 
