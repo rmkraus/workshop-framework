@@ -3,5 +3,6 @@ services:
     image: ghcr.io/rmkraus/workshop-framework
     ports:
     - 8888:8888
+    - 3000:3000
     volumes:
     - ../workshop-framework:/project:cached

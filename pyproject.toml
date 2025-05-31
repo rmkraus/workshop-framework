@@ -1,12 +1,17 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "workshop-framework"
 description = "Workshop Framework"
 version = "0.1.0"
 requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+]
+
+[project.scripts]
+devx = "devx.app:main"
 
 [tool.black]
 line-length = 120
@@ -30,6 +35,9 @@ lineLength = 120
 max-line-length = 120
 
 [tool.brev]
-instance_type = "l40s-48gb.1x"
-workspace_group_id = "crusoe-brev-wg"
-ports = [ { name = "jupyter", port = 8888 } ]
+instance_type = "g4dn.xlarge"
+workspace_group_id = "default"
+ports = [
+    { port = 8888, name = "Jupyter" },
+    { port = 3000, name = "VSCode" }
+]

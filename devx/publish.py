@@ -6,7 +6,7 @@ import sys
 
 import requests
 
-from devx.models import BrevWorkspace, Project
+from .models import BrevWorkspace, Project
 
 
 def run_brev_org():
@@ -65,6 +65,7 @@ def create_launchable(workspace: BrevWorkspace, project: Project) -> dict:
 
     response = requests.post(url, headers=headers, json=payload, timeout=10)
     return response.json()
+
 
 
 def publish(args: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:

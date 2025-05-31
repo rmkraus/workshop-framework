@@ -12,7 +12,7 @@ from pydantic_settings import (BaseSettings, PydanticBaseSettingsSource,
                                SettingsConfigDict)
 
 
-def infer_repo_url() -> str:
+def _infer_repo_url() -> str:
     """Infer the HTTPS URL of the repository from the git remote.
 
     Returns:
@@ -36,7 +36,7 @@ def infer_repo_url() -> str:
     raise ValueError(f"Unsupported remote URL format: {remote_url}")
 
 
-def infer_image_url() -> str:
+def _infer_image_url() -> str:
     """Infer the container image URL from the git remote.
 
     Returns:
@@ -98,8 +98,8 @@ class Project(BaseSettings):
 
     name: str
     description: str
-    repo_url: str = Field(default_factory=infer_repo_url)
-    image_url: str = Field(default_factory=infer_image_url)
+    repo_url: str = Field(default_factory=_infer_repo_url)
+    image_url: str = Field(default_factory=_infer_image_url)
 
     @classmethod
     # pylint: disable-next=arguments-differ,too-many-arguments,too-many-positional-arguments

@@ -1,4 +1,4 @@
-"""Workshop file synchronization functionality."""
+"""Workshop file local run functionality."""
 
 import argparse
 from pathlib import Path
@@ -6,13 +6,13 @@ from typing import List
 
 import yaml
 
-from .models import BrevWorkspace, Port, Project
+from .models import BrevWorkspace, Port
 
 DEVX_DIR = Path('.devx')
 COMPOSE_PATH = './docker-compose.yaml'
 
 
-def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> str:
+def get_docker_compose(compose_path: str, ports: List[Port]) -> str:
     """Get the docker compose file content.
 
     Args:
@@ -29,30 +29,27 @@ def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> 
     except FileNotFoundError:
         compose = {}
     compose['services'] = compose.get('services', {})
+    compose['services']['devx'] = compose['services'].get('devx', {})
 
     # Add devx service
-    repo_name = image_url.split('/')[-1]
-    compose['services']['devx'] = {
-        "image": image_url,
-        "ports": [f"{port.port}:{port.port}" for port in ports],
-        "volumes": [f"../{repo_name}:/project:cached"]
-    }
+    compose['services']['devx']['build'] = {"context": ".", "dockerfile": "Dockerfile"}
+    compose['services']['devx']['ports'] = [f"{port.port}:{port.port}" for port in ports]
+    compose['services']['devx']['volumes'] = [".:/project:cached"]
 
     return yaml.dump(compose)
 
 
-def sync(_: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
-    """Synchronize the cached workshop files.
+def run(_: argparse.Namespace, workspace: BrevWorkspace) -> None:
+    """Run the workshop files locally.
 
     Args:
         args: Command line arguments.
         workspace: Brev workspace configuration.
-        project: Project configuration.
     """
-    print("🔄 Synchronizing cached workshop files...")
+    print("🔄 Running workshop files locally...")
 
     # get docker compose
-    compose = get_docker_compose(COMPOSE_PATH, project.image_url, workspace.ports)
+    compose = get_docker_compose(COMPOSE_PATH, workspace.ports)
 
     # write to file
     with open(DEVX_DIR / COMPOSE_PATH, 'w', encoding='utf-8') as f:

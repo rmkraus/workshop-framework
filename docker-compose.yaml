@@ -1,8 +1,0 @@
-services:
-  devx:
-    image: ghcr.io/rmkraus/workshop-framework/devx:main
-    volumes:
-      - ../workshop-framework:/project:cached
-    ports:
-      - 8888:8888
-

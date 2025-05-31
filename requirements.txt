@@ -1,7 +1,10 @@
+# Core dependencies
 jupyterlab>3.0
 jupyter_app_launcher
-requests
-pydantic
-pydantic-settings
 
 # Add additional dependencies here
+requests>=2.31.0
+pyyaml>=6.0.1
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+vendorize>=0.3.0

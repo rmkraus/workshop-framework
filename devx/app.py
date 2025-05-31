@@ -3,9 +3,9 @@
 import argparse
 from pathlib import Path
 
-from devx.models import BrevWorkspace, Project
-from devx.publish import publish
-from devx.sync import sync
+from .models import BrevWorkspace, Project
+from .publish import publish
+from .sync import sync
 
 DEVX_DIR = Path('.devx')
 COMPOSE_PATH = './docker-compose.yaml'
