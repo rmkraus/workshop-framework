@@ -6,7 +6,7 @@ import sys
 
 import requests
 
-from .models import BrevWorkspace, Project
+from devx.models import BrevWorkspace, Project
 
 
 def run_brev_org():
@@ -98,5 +98,5 @@ def publish(args: argparse.Namespace, workspace: BrevWorkspace, project: Project
         print(f"Server response: {api_response}")
         sys.exit(1)
 
-    print(f"\n✅ Launchable created with ID: {api_response.get("id")}")
-    print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get("id")}")
+    print(f"\n✅ Launchable created with ID: {api_response.get('id')}")
+    print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get('id')}")

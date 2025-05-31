@@ -6,7 +6,7 @@ from typing import List
 
 import yaml
 
-from .models import BrevWorkspace, Port, Project
+from devx.models import BrevWorkspace, Port, Project
 
 DEVX_DIR = Path('.devx')
 COMPOSE_PATH = './docker-compose.yaml'
