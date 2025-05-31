@@ -1,5 +1,7 @@
 jupyterlab>3.0
 jupyter_app_launcher
+requests
+pydantic
+pydantic-settings
 
 # Add additional dependencies here
-
