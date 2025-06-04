@@ -1,143 +1,63 @@
 """Workshop running functionality."""
 
 import argparse
-import os
 import subprocess
 import webbrowser
 from pathlib import Path
 from typing import List
 
-import yaml
+from devx.sync import LOCAL_JUPYTER_PORT, TARGET_LOCAL_FILE
 
-from devx.models import BrevWorkspace, Port
 
-DEVX_DIR = Path('.devx')
-COMPOSE_PATHS = ['compose.yaml', 'compose.yml']
-COMPOSE_PATH = next((path for path in COMPOSE_PATHS if Path(path).exists()), COMPOSE_PATHS[0])
-LOCAL_COMPOSE_PATH = DEVX_DIR / 'compose.local.yaml'
+def _run(cmd: List[str]) -> None:
+    """Run a command and handle errors."""
+    if not TARGET_LOCAL_FILE.exists():
+        print("⚠️  No workshop configuration found")
+        return
 
-def get_docker_compose(compose_path: str, ports: List[Port], jupyter_port: int) -> str:
-    """Get the docker compose file content.
-
-    Args:
-        compose_path: Path to the docker compose file.
-        image_url: URL of the docker image.
-        ports: List of ports to expose.
-
-    Returns:
-        The docker compose file content.
-    """
     try:
-        with open(compose_path, 'r', encoding='utf-8') as f:
-            compose = yaml.load(f.read(), Loader=yaml.SafeLoader) or {}
-    except FileNotFoundError:
-        compose = {}
-    compose['services'] = compose.get('services', {})
-    compose['services']['devx'] = compose['services'].get('devx', {})
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError:
+        pass
 
-
-    # Add ports
-    port_list = []
-    for port in ports:
-        host_port = port.port
-        if port.name == "jupyter":
-            host_port = jupyter_port
-        port_list.append(f"{host_port}:{port.port}")
-
-    # Add devx service
-    compose['services']['devx']['build'] = {
-        "context": "../",
-        "dockerfile": "Dockerfile",
-        "args": {
-            "USER_UID": str(os.getuid()),
-            "USER_GID": str(os.getgid()),
-        }
-    }
-    compose['services']['devx']['ports'] = [f"{port.port}:{port.port}" for port in ports]
-    compose['services']['devx']['volumes'] = ["../:/project:cached", "/var/run/docker.sock:/var/run/docker.sock"]
-
-    # Add environment variables
-    compose['services']['devx']['environment'] = {
-        "NGC_API_KEY": "${NGC_API_KEY}"
-    }
-
-    return yaml.dump(compose)
-
-
-def start(args: argparse.Namespace, workspace: BrevWorkspace) -> None:
+def start(args: argparse.Namespace) -> None:
     """Start the workshop locally.
 
     Args:
         args: Command line arguments.
-        workspace: Brev workspace configuration.
     """
     print("🚀 Starting workshop...")
 
-    # get docker compose
-    compose = get_docker_compose(COMPOSE_PATH, workspace.ports, args.port)
-
-    # write to file
-    with open(LOCAL_COMPOSE_PATH, 'w', encoding='utf-8') as f:
-        f.write(compose)
-
     # run docker compose
-    cmd = ['docker', 'compose', '-f', LOCAL_COMPOSE_PATH, 'up', '--build', '-d']
+    cmd = ['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'up', '--build', '-d']
     if Path('workshop.env').exists():
         cmd.extend(['--env-file', 'workshop.env'])
-    subprocess.run(cmd, check=True)
+    _run(cmd)
 
     # open browser
     if not args.no_browser:
-        webbrowser.open(f"http://localhost:{args.port}")
+        webbrowser.open(f"http://localhost:{LOCAL_JUPYTER_PORT}")
 
 
 def stop() -> None:
     """Stop the workshop's Docker containers."""
     print("🛑 Stopping workshop...")
-
-    if not LOCAL_COMPOSE_PATH.exists():
-        print("⚠️  No running workshop found")
-        return
-
-    try:
-        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'down'], check=True)
-        LOCAL_COMPOSE_PATH.unlink()
-        print("✅ Workshop stopped")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to stop workshop: {e}")
-    except FileNotFoundError:
-        print("✅ Workshop stopped")
+    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'down'])
 
 
 def build() -> None:
     """Build the workshop's Docker container."""
     print("🔨 Building workshop container...")
-
-    if not LOCAL_COMPOSE_PATH.exists():
-        print("⚠️  No workshop configuration found")
-        return
-
-    try:
-        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'build'], check=True)
-        print("✅ Workshop container built")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to build workshop container: {e}")
-    except FileNotFoundError:
-        print("⚠️  No workshop configuration found")
+    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'build'])
 
 
 def restart() -> None:
     """Restart the workshop's Docker containers."""
     print("🔄 Restarting workshop...")
+    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'restart'])
 
-    if not LOCAL_COMPOSE_PATH.exists():
-        print("⚠️  No workshop configuration found")
-        return
 
-    try:
-        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'restart'], check=True)
-        print("✅ Workshop restarted")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to restart workshop: {e}")
-    except FileNotFoundError:
-        print("⚠️  No workshop configuration found")
+def status() -> None:
+    """Check the status of the workshop's Docker containers."""
+    print("📊 Checking workshop status...")
+    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'ps'])
