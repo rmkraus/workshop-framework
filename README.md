@@ -79,6 +79,24 @@ To start your workshop on your own machine:
 devx start
 ```
 
+## Debugging
+
+If your workshop fails to start, you can use Docker CLI commands to inspect the failure:
+
+```bash
+# List all containers (including stopped ones)
+docker ps -a
+
+# Check container logs
+docker logs devx-devx-1
+
+# Inspect container details
+docker inspect devx-devx-1
+
+# Start an interactive shell in the container
+docker exec -it devx-devx-1 /bin/bash
+```
+
 ## Publish the workshop
 
 The code on the main branch of the repo is what will be targetted by your Launchable.
