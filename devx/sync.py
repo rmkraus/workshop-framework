@@ -36,7 +36,7 @@ def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> 
     compose['services']['devx'] = {
         "image": image_url + f"/devx:{TARGET_BRANCH}",
         "ports": [f"{port.port}:{port.port}" for port in ports],
-        "volumes": [f"../{repo_name}:/project:cached"],
+        "volumes": [f"../{repo_name}:/project:cached", "/var/run/docker.sock:/var/run/docker.sock"],
         "environment": {
             "NGC_API_KEY": "${NGC_API_KEY}"
         }

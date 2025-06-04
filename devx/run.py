@@ -54,7 +54,7 @@ def get_docker_compose(compose_path: str, ports: List[Port], jupyter_port: int) 
         }
     }
     compose['services']['devx']['ports'] = [f"{port.port}:{port.port}" for port in ports]
-    compose['services']['devx']['volumes'] = ["../:/project:cached"]
+    compose['services']['devx']['volumes'] = ["../:/project:cached", "/var/run/docker.sock:/var/run/docker.sock"]
 
     # Add environment variables
     compose['services']['devx']['environment'] = {

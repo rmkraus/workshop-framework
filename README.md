@@ -2,6 +2,18 @@
 
 Tooling for building workshops quickly.
 
+## Prerequisites
+
+- Docker installed and running on your system
+    - On Windows and Mac, check out (Rancher Desktop)[https://rancherdesktop.io/]
+    - On Linux, install (Docker Engine)[https://docs.docker.com/engine/install/].
+- *[OPTIONAL]* `pipx` installed on your system
+    - There are many ways to (install pipx)[https://pipx.pypa.io/stable/installation/]. Here are some common ones:
+        - On Windows: `python3 -m pip install --user pipx`
+        - On Mac: `brew install pipx`
+        - On Linux: `python3 -m pip install --user pipx`
+
+
 ## Install
 
 The easiest way to install this tooling is with `pipx`.

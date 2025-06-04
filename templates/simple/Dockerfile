@@ -9,6 +9,7 @@ WORKDIR /setup
 
 # Install dependencies
 RUN apt-get update && apt-get upgrade -y && apt-get clean
+RUN apt-get update && apt-get install -y docker.io && apt-get clean
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
