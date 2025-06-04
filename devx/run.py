@@ -107,3 +107,37 @@ def stop() -> None:
         print(f"❌ Failed to stop workshop: {e}")
     except FileNotFoundError:
         print("✅ Workshop stopped")
+
+
+def build() -> None:
+    """Build the workshop's Docker container."""
+    print("🔨 Building workshop container...")
+
+    if not LOCAL_COMPOSE_PATH.exists():
+        print("⚠️  No workshop configuration found")
+        return
+
+    try:
+        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'build'], check=True)
+        print("✅ Workshop container built")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to build workshop container: {e}")
+    except FileNotFoundError:
+        print("⚠️  No workshop configuration found")
+
+
+def restart() -> None:
+    """Restart the workshop's Docker containers."""
+    print("🔄 Restarting workshop...")
+
+    if not LOCAL_COMPOSE_PATH.exists():
+        print("⚠️  No workshop configuration found")
+        return
+
+    try:
+        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'restart'], check=True)
+        print("✅ Workshop restarted")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to restart workshop: {e}")
+    except FileNotFoundError:
+        print("⚠️  No workshop configuration found")

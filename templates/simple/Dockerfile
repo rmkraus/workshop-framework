@@ -1,10 +1,11 @@
-FROM python:3.12
+FROM nvcr.io/nvidia/rapidsai/notebooks:25.04-cuda12.8-py3.12
 
 # Set build arguments for user/group IDs
 ARG USER_UID=1000
 ARG USER_GID=1000
 
 # Work in the setup directory directory
+USER root
 WORKDIR /setup
 
 # Install dependencies
@@ -14,8 +15,10 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
 # Create a non-root user and group
-RUN groupadd -r nvidia -g ${USER_GID} || true && \
-    useradd -m -r -G ${USER_GID} -u ${USER_UID} nvidia && \
+RUN apt-get update && apt-get install -y sudo && apt-get clean && \
+    groupadd -r nvidia -g ${USER_GID} || true && \
+    useradd -m -r -G ${USER_GID},conda -u ${USER_UID} nvidia && \
+    echo "nvidia ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     mkdir -p /project && \
     chown -R nvidia /project
 USER nvidia

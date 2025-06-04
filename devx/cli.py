@@ -6,7 +6,7 @@ import os
 from devx.create import create
 from devx.init import init
 from devx.models import BrevWorkspace, Project
-from devx.run import start, stop
+from devx.run import build, restart, start, stop
 from devx.sync import sync
 
 
@@ -41,6 +41,12 @@ def main() -> None:
     # Stop subcommand
     subparsers.add_parser("stop", help="Stop the workshop")
 
+    # Build subcommand
+    subparsers.add_parser("build", help="Build the workshop container")
+
+    # Restart subcommand
+    subparsers.add_parser("restart", help="Restart the workshop")
+
     # Create subcommand
     create_parser = subparsers.add_parser("create", help="Create a launchable workshop on Brev")
     create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
@@ -66,6 +72,10 @@ def main() -> None:
         start(args, BrevWorkspace())
     elif args.command == "stop":
         stop()
+    elif args.command == "build":
+        build()
+    elif args.command == "restart":
+        restart()
     elif args.command == "create":
         create(args, BrevWorkspace(), project)
     elif args.command == "sync":
