@@ -1,17 +1,20 @@
 FROM python:3.12
 
-RUN apt-get update && apt-get upgrade -y && apt-get clean
+# Set build arguments for user/group IDs
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 # Work in the setup directory directory
 WORKDIR /setup
 
-# Copy requirements and install as root
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN apt-get update && apt-get upgrade -y && apt-get clean
+COPY pyproject.toml .
+RUN pip install --no-cache-dir .
 
 # Create a non-root user and group
-RUN groupadd -r nvidia -g 1000 && \
-    useradd -m -r -g nvidia -u 1000 nvidia && \
+RUN groupadd -r nvidia -g ${USER_GID} && \
+    useradd -m -r -g nvidia -u ${USER_UID} nvidia && \
     mkdir -p /project && \
     chown -R nvidia:nvidia /project
 USER nvidia
@@ -31,4 +34,3 @@ CMD ["jupyter", "lab", \
      "--ServerApp.token=", \
      "--ServerApp.password_required=False", \
      "--expose-app-in-browser"]
-

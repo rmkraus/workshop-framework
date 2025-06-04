@@ -12,8 +12,9 @@ import yaml
 from devx.models import BrevWorkspace, Port
 
 DEVX_DIR = Path('.devx')
-COMPOSE_PATH = './docker-compose.yaml'
-LOCAL_COMPOSE_PATH = DEVX_DIR / 'docker-compose.local.yaml'
+COMPOSE_PATHS = ['compose.yaml', 'compose.yml']
+COMPOSE_PATH = next((path for path in COMPOSE_PATHS if Path(path).exists()), COMPOSE_PATHS[0])
+LOCAL_COMPOSE_PATH = DEVX_DIR / 'compose.local.yaml'
 
 def get_docker_compose(compose_path: str, ports: List[Port], jupyter_port: int) -> str:
     """Get the docker compose file content.
@@ -55,6 +56,11 @@ def get_docker_compose(compose_path: str, ports: List[Port], jupyter_port: int) 
     compose['services']['devx']['ports'] = [f"{port.port}:{port.port}" for port in ports]
     compose['services']['devx']['volumes'] = ["../:/project:cached"]
 
+    # Add environment variables
+    compose['services']['devx']['environment'] = {
+        "NGC_API_KEY": "${NGC_API_KEY}"
+    }
+
     return yaml.dump(compose)
 
 
@@ -75,7 +81,10 @@ def start(args: argparse.Namespace, workspace: BrevWorkspace) -> None:
         f.write(compose)
 
     # run docker compose
-    subprocess.run(['docker', 'compose', '-f', LOCAL_COMPOSE_PATH, 'up', '--build',  '-d'], check=True)
+    cmd = ['docker', 'compose', '-f', LOCAL_COMPOSE_PATH, 'up', '--build', '-d']
+    if Path('workshop.env').exists():
+        cmd.extend(['--env-file', 'workshop.env'])
+    subprocess.run(cmd, check=True)
 
     # open browser
     if not args.no_browser:

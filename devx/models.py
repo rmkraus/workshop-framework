@@ -7,9 +7,29 @@ from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel, Field
-from pydantic_settings import (BaseSettings, PydanticBaseSettingsSource,
-                               PyprojectTomlConfigSettingsSource,
-                               SettingsConfigDict)
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    PyprojectTomlConfigSettingsSource,
+    SettingsConfigDict,
+)
+
+
+def _find_pyproject_dir() -> Path:
+    """Find the directory containing pyproject.toml.
+
+    Returns:
+        Path to the directory containing pyproject.toml.
+
+    Raises:
+        RuntimeError: If pyproject.toml cannot be found.
+    """
+    current = Path.cwd()
+    while current.parent != current:
+        if (current / 'pyproject.toml').is_file():
+            return current
+        current = current.parent
+    raise RuntimeError("Could not find pyproject.toml")
 
 
 def _relative_to_root() -> str:
@@ -99,7 +119,6 @@ def _infer_image_url() -> str:
     raise ValueError(f"Unsupported remote URL format: {remote_url}")
 
 
-
 class Port(BaseModel):
     """Represents a port mapping for a container.
 
@@ -127,6 +146,7 @@ class Project(BaseSettings):
         description: The description of the project.
         repo_url: The HTTPS URL of the repository.
         image_url: The container image URL.
+        project_dir: Path to the directory containing pyproject.toml.
     """
     model_config = SettingsConfigDict(
         pyproject_toml_table_header=('project',), extra='allow'
@@ -136,6 +156,7 @@ class Project(BaseSettings):
     description: str
     repo_url: str = Field(default_factory=_infer_repo_url)
     image_url: str = Field(default_factory=_infer_image_url)
+    project_dir: Path = Field(default_factory=_find_pyproject_dir)
 
     @classmethod
     # pylint: disable-next=arguments-differ,too-many-arguments,too-many-positional-arguments

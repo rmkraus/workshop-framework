@@ -12,7 +12,7 @@ pipx install git+https://github.com/rmkraus/workshop-framework.git
 devx --help
 ```
 
-## GitHub repo
+## Create a GitHub repo
 
 This framework is only compatible with public GitHub repos.
 
@@ -57,9 +57,15 @@ The .devx folder contains the lab manual content:
 └── *.md                  # Manual Pages
 ```
 
-## Testing the workshop locally
+## Testing your workshop
 
-TODO
+You may have a machine outside of Brev that you'd like to use for creating your workshop.
+
+To launch your workshop on your own machine:
+
+```bash
+devx run
+```
 
 ## Publish the workshop
 

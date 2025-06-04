@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-devx = "devx.app:main"
+devx = "devx.cli:main"
 
 [build-system]
 requires = ["hatchling"]

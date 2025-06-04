@@ -1,10 +1,11 @@
-"""Workshop configuration and settings management."""
+"""Workshop manager cli."""
 
 import argparse
+import os
 
+from devx.create import create
 from devx.init import init
 from devx.models import BrevWorkspace, Project
-from devx.publish import publish
 from devx.run import start, stop
 from devx.sync import sync
 
@@ -40,10 +41,10 @@ def main() -> None:
     # Stop subcommand
     subparsers.add_parser("stop", help="Stop the workshop")
 
-    # Publish subcommand
-    publish_parser = subparsers.add_parser("publish", help="Publish a workshop to Brev")
-    publish_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
-    publish_parser.add_argument(
+    # Create subcommand
+    create_parser = subparsers.add_parser("create", help="Create a launchable workshop on Brev")
+    create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
+    create_parser.add_argument(
         "--dry-run", action="store_true", help="Show API request details without making the request")
 
     # Sync subcommand
@@ -51,16 +52,24 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Handle init command
     if args.command == "init":
         init(args)
-    elif args.command == "start":
+        return
+
+    # Create project instance and change to project directory
+    project = Project()
+    os.chdir(project.project_dir)
+
+    # Handle other commands
+    if args.command == "start":
         start(args, BrevWorkspace())
     elif args.command == "stop":
         stop()
-    elif args.command == "publish":
-        publish(args, BrevWorkspace(), Project())
+    elif args.command == "create":
+        create(args, BrevWorkspace(), project)
     elif args.command == "sync":
-        sync(BrevWorkspace(), Project())
+        sync(BrevWorkspace(), project)
 
 
 if __name__ == "__main__":

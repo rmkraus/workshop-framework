@@ -8,7 +8,8 @@ import yaml
 from devx.models import BrevWorkspace, Port, Project
 
 DEVX_DIR = Path('.devx')
-COMPOSE_PATH = './docker-compose.yaml'
+COMPOSE_PATHS = ['compose.yaml', 'compose.yml']
+COMPOSE_PATH = next((path for path in COMPOSE_PATHS if Path(path).exists()), COMPOSE_PATHS[0])
 TARGET_BRANCH = 'main'
 
 
@@ -35,8 +36,15 @@ def get_docker_compose(compose_path: str, image_url: str, ports: List[Port]) -> 
     compose['services']['devx'] = {
         "image": image_url + f"/devx:{TARGET_BRANCH}",
         "ports": [f"{port.port}:{port.port}" for port in ports],
-        "volumes": [f"../{repo_name}:/project:cached"]
+        "volumes": [f"../{repo_name}:/project:cached"],
+        "environment": {
+            "NGC_API_KEY": "${NGC_API_KEY}"
+        }
     }
+
+    # Add env_file if variables.env exists
+    if Path('variables.env').exists():
+        compose['services']['devx']['env_file'] = ['variables.env']
 
     return yaml.dump(compose)
 
@@ -55,7 +63,7 @@ def sync(workspace: BrevWorkspace, project: Project) -> None:
     compose = get_docker_compose(COMPOSE_PATH, project.image_url, workspace.ports)
 
     # write to file
-    with open(DEVX_DIR / COMPOSE_PATH, 'w', encoding='utf-8') as f:
+    with open(DEVX_DIR / 'compose.yaml', 'w', encoding='utf-8') as f:
         f.write(compose)
 
-    print(f"✅ Docker compose file written to {DEVX_DIR / COMPOSE_PATH}")
+    print(f"✅ Docker compose file written to {DEVX_DIR / 'compose.yaml'}")

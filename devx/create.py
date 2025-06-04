@@ -1,4 +1,4 @@
-"""Brev workspace publishing functionality."""
+"""Brev workspace creation functionality."""
 
 import argparse
 import json
@@ -59,7 +59,7 @@ def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool 
             "dockerCompose": {
                 "fileUrl": (
                     f"{project.repo_url}/raw/{TARGET_BRANCH}/{workspace.relative_to_root}/"
-                    ".devx/docker-compose.yaml"
+                    ".devx/compose.yaml"
                 ),
                 "jupyterInstall": False,
                 "registries": []
@@ -82,8 +82,8 @@ def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool 
     return response.json()
 
 
-def publish(args: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
-    """Publish a workshop to Brev.
+def create(args: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
+    """Create a launchable workshop on Brev.
 
     Args:
         args: Command line arguments.

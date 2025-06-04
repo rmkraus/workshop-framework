@@ -2,6 +2,11 @@
 name = "simple-workshop"
 description = "Simple Workshop Example"
 version = "0.1.0"
+dependencies = [
+    "jupyterlab>=4.0.0",
+    "jupyterlab-git>=0.44.0",
+    "jupyter-app-launcher>=0.1.0",
+]
 
 [tool.brev]
 instance_type = "l40s-48gb.1x"
