@@ -100,7 +100,7 @@ def stop() -> None:
         return
 
     try:
-        subprocess.run(['docker', 'compose', '-f', LOCAL_COMPOSE_PATH, 'down'], check=True)
+        subprocess.run(['docker', 'compose', '-f', str(LOCAL_COMPOSE_PATH), 'down'], check=True)
         LOCAL_COMPOSE_PATH.unlink()
         print("✅ Workshop stopped")
     except subprocess.CalledProcessError as e:

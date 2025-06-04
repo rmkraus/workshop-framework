@@ -13,10 +13,10 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
 # Create a non-root user and group
-RUN groupadd -r nvidia -g ${USER_GID} && \
-    useradd -m -r -g nvidia -u ${USER_UID} nvidia && \
+RUN groupadd -r nvidia -g ${USER_GID} || true && \
+    useradd -m -r -G ${USER_GID} -u ${USER_UID} nvidia && \
     mkdir -p /project && \
-    chown -R nvidia:nvidia /project
+    chown -R nvidia /project
 USER nvidia
 ENV SHELL=/bin/bash
 

@@ -61,10 +61,10 @@ The .devx folder contains the lab manual content:
 
 You may have a machine outside of Brev that you'd like to use for creating your workshop.
 
-To launch your workshop on your own machine:
+To start your workshop on your own machine:
 
 ```bash
-devx run
+devx start
 ```
 
 ## Publish the workshop
