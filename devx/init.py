@@ -19,8 +19,8 @@ TEMPLATE_FILES = [
     "README.md",
     "Dockerfile",
     "pyproject.toml",
-    "requirements.txt",
-    "docker-compose.yaml",
+    "compose.yaml",
+    "variables.env",
 ]
 
 TEMPLATE_REPO = ("https://github.com/rmkraus/workshop-framework/archive/refs/heads/main.zip", "templates")
