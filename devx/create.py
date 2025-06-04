@@ -1,6 +1,5 @@
 """Brev workspace creation functionality."""
 
-import argparse
 import json
 import subprocess
 import sys
@@ -82,7 +81,7 @@ def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool 
     return response.json()
 
 
-def create(args: argparse.Namespace, workspace: BrevWorkspace, project: Project) -> None:
+def create(workspace: BrevWorkspace, project: Project, yes: bool, dry_run: bool) -> None:
     """Create a launchable workshop on Brev.
 
     Args:
@@ -101,19 +100,19 @@ def create(args: argparse.Namespace, workspace: BrevWorkspace, project: Project)
     print(f"  - Repository: {project.repo_url}")
     print(f"  - Image: {project.image_url}/devx:{TARGET_BRANCH}")
 
-    if not args.yes and input("\nContinue? [y/N] ").lower() != 'y':
+    if not yes and input("\nContinue? [y/N] ").lower() != 'y':
         print("❌ Aborted.")
         sys.exit(1)
 
     print("\n📦 Creating launchable...")
-    api_response = create_launchable(workspace, project, dry_run=args.dry_run)
+    api_response = create_launchable(workspace, project, dry_run=dry_run)
     if not api_response or not api_response.get("id"):
-        if not args.dry_run:
+        if not dry_run:
             print("❌ Failed to create launchable.")
             print(f"Server response: {api_response}")
             sys.exit(1)
         return
 
-    if not args.dry_run:
+    if not dry_run:
         print(f"\n✅ Launchable created with ID: {api_response.get('id')}")
         print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get('id')}")

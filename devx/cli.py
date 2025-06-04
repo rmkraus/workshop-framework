@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
         "--dry-run", action="store_true", help="Show API request details without making the request")
 
     # Utility commands
-    _ = subparsers.add_parser("sync", help="Only synchronize the cached workshop files and quit.")
+    subparsers.add_parser("sync", help="Only synchronize the cached workshop files and quit.")
 
     return parser.parse_args()
 
@@ -67,13 +67,14 @@ def main() -> None:
 
     # Ensure files are synced
     workspace = BrevWorkspace()
-    sync(workspace, project)
     if args.command == "sync":
+        sync(workspace, project, force=True)
         return
+    sync(workspace, project)
 
     # Handle other commands
     if args.command == "start":
-        start(args)
+        start(args.no_browser)
     elif args.command == "stop":
         stop()
     elif args.command == "build":
@@ -83,7 +84,7 @@ def main() -> None:
     elif args.command == "status":
         status()
     elif args.command == "create":
-        create(args, workspace, project)
+        create(workspace, project, args.yes, args.dry_run)
 
 
 if __name__ == "__main__":

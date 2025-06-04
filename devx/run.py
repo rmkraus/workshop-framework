@@ -1,6 +1,5 @@
 """Workshop running functionality."""
 
-import argparse
 import subprocess
 import webbrowser
 from pathlib import Path
@@ -20,7 +19,7 @@ def _run(cmd: List[str]) -> None:
     except subprocess.CalledProcessError:
         pass
 
-def start(args: argparse.Namespace) -> None:
+def start(no_browser: bool = False) -> None:
     """Start the workshop locally.
 
     Args:
@@ -35,7 +34,7 @@ def start(args: argparse.Namespace) -> None:
     _run(cmd)
 
     # open browser
-    if not args.no_browser:
+    if not no_browser:
         webbrowser.open(f"http://localhost:{LOCAL_JUPYTER_PORT}")
 
 
