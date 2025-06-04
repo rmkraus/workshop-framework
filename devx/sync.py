@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 
 import yaml
+from dotenv import dotenv_values
 
 from devx.models import BrevWorkspace, Port, Project
 
@@ -24,22 +25,14 @@ def _parse_env_file(env_file_path: Path) -> dict:
         env_file_path: Path to the .env file.
 
     Returns:
-        Dictionary of environment variables with shell substitution format.
+        Dictionary of environment variables with their values from the file.
     """
     env_vars = {"NGC_API_KEY": "${NGC_API_KEY}"}  # Start with default NGC_API_KEY
 
     if not env_file_path.exists():
         return env_vars
 
-    with open(env_file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-
-            var_name = line.split('=', 1)[0].strip()
-            if var_name:
-                env_vars[var_name] = f"${{{var_name}}}"
+    env_vars.update(dotenv_values(env_file_path))
 
     return env_vars
 

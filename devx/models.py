@@ -15,23 +15,6 @@ from pydantic_settings import (
 )
 
 
-def _find_pyproject_dir() -> Path:
-    """Find the directory containing pyproject.toml.
-
-    Returns:
-        Path to the directory containing pyproject.toml.
-
-    Raises:
-        RuntimeError: If pyproject.toml cannot be found.
-    """
-    current = Path.cwd()
-    while current.parent != current:
-        if (current / 'pyproject.toml').is_file():
-            return current
-        current = current.parent
-    raise RuntimeError("Could not find pyproject.toml")
-
-
 def _relative_to_root() -> str:
     """Find the .git directory and nearest pyproject.toml, return dirs between them.
 
@@ -146,7 +129,7 @@ class Project(BaseSettings):
         description: The description of the project.
         repo_url: The HTTPS URL of the repository.
         image_url: The container image URL.
-        project_dir: Path to the directory containing pyproject.toml.
+        project_dir: Path to the current directory.
     """
     model_config = SettingsConfigDict(
         pyproject_toml_table_header=('project',), extra='allow'
@@ -156,7 +139,6 @@ class Project(BaseSettings):
     description: str
     repo_url: str = Field(default_factory=_infer_repo_url)
     image_url: str = Field(default_factory=_infer_image_url)
-    project_dir: Path = Field(default_factory=_find_pyproject_dir)
 
     @classmethod
     # pylint: disable-next=arguments-differ,too-many-arguments,too-many-positional-arguments

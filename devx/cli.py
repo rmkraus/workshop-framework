@@ -2,12 +2,32 @@
 
 import argparse
 import os
+from pathlib import Path
 
 from devx.create import create
 from devx.init import init
 from devx.models import BrevWorkspace, Project
 from devx.run import build, restart, start, status, stop
 from devx.sync import sync
+
+
+def go_to_project_root() -> Path:
+    """Go to the nearest directory containing a pyproject.toml file.
+
+    Returns:
+        Path to the project root directory.
+
+    Raises:
+        FileNotFoundError: If no pyproject.toml is found in the current directory or any parent.
+    """
+    current = Path.cwd()
+    while current != current.parent:
+        if (current / 'pyproject.toml').exists():
+            os.chdir(current)
+            return current
+        current = current.parent
+    print("No pyproject.toml found in current directory or any parent directory")
+    return None
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,9 +81,12 @@ def main() -> None:
         init(args)
         return
 
-    # Create project instance and change to project directory
+    # Find project root and change to it
+    if not go_to_project_root():
+        return
+
+    # Create project instance
     project = Project()
-    os.chdir(project.project_dir)
 
     # Ensure files are synced
     workspace = BrevWorkspace()
