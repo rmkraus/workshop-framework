@@ -1,8 +1,9 @@
 """Workshop manager cli."""
 
-import argparse
 import os
 from pathlib import Path
+
+import click
 
 from devx.create import create
 from devx.init import init
@@ -11,14 +12,14 @@ from devx.run import build, restart, start, status, stop
 from devx.sync import sync
 
 
-def go_to_project_root() -> Path:
-    """Go to the nearest directory containing a pyproject.toml file.
+def find_project_root() -> Path:
+    """Find and change to the project root directory.
 
     Returns:
         Path to the project root directory.
 
     Raises:
-        FileNotFoundError: If no pyproject.toml is found in the current directory or any parent.
+        click.ClickException: If no pyproject.toml is found.
     """
     current = Path.cwd()
     while current != current.parent:
@@ -26,88 +27,134 @@ def go_to_project_root() -> Path:
             os.chdir(current)
             return current
         current = current.parent
-    print("No pyproject.toml found in current directory or any parent directory")
-    return None
+
+    raise click.ClickException("No pyproject.toml found in current directory or any parent directory")
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command line arguments.
+def load_project_context() -> tuple[Project, BrevWorkspace]:
+    """Load project and workspace configuration.
 
     Returns:
-        Parsed command line arguments.
+        Tuple of (project, workspace)
+
+    Raises:
+        click.ClickException: If loading fails.
     """
-    parser = argparse.ArgumentParser(description="Workshop configuration and settings management.")
-    subparsers = parser.add_subparsers(dest="command", help="Command to run", required=True)
+    try:
+        project = Project()
+        workspace = BrevWorkspace()
+        return project, workspace
+    except Exception as e:
+        raise click.ClickException(f"Failed to load configuration: {e}")
 
-    # Code management commands
-    init_parser = subparsers.add_parser("init", help="Initialize a workshop repository")
-    init_parser.add_argument("-f", "--force", action="store_true", help="Overwrite existing files")
-    init_parser.add_argument(
-        "-t", "--template",
-        default="simple",
-        help="Name of the template to use"
-    )
 
-    # Locally running workshop commands
-    start_parser = subparsers.add_parser("start", help="Start the workshop locally")
-    start_parser.add_argument(
-        "--no-browser",
-        action="store_true",
-        help="Don't open the browser automatically"
-    )
-    subparsers.add_parser("stop", help="Stop the workshop")
-    subparsers.add_parser("build", help="Build the workshop container")
-    subparsers.add_parser("restart", help="Restart the workshop")
-    subparsers.add_parser("status", help="Check the status of the workshop containers")
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.version_option()
+def cli():
+    """Workshop configuration and settings management."""
+    pass
 
-    # Brev configuration commands
-    create_parser = subparsers.add_parser("create", help="Create a launchable workshop on Brev")
-    create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to prompts")
-    create_parser.add_argument(
-        "--dry-run", action="store_true", help="Show API request details without making the request")
 
-    # Utility commands
-    subparsers.add_parser("sync", help="Only synchronize the cached workshop files and quit.")
+# Project Management Commands
+@cli.group(context_settings={"help_option_names": ["-h", "--help"]})
+def project():
+    """Project and repository management commands."""
+    pass
 
-    return parser.parse_args()
+
+@project.command("init")
+@click.option("-f", "--force", is_flag=True, help="Overwrite existing files")
+@click.option("-t", "--template", default="simple", help="Name of the template to use")
+def init_cmd(force: bool, template: str):
+    """Initialize a workshop repository."""
+    # Create a mock args object for backward compatibility
+    class Args:
+        def __init__(self, force, template):
+            self.force = force
+            self.template = template
+
+    init(Args(force, template))
+
+
+@project.command("sync")
+def sync_cmd():
+    """Force sync of runtime config."""
+    find_project_root()
+    project, workspace = load_project_context()
+    sync(workspace, project, force=True)
+
+
+# Workshop Commands
+@cli.group(context_settings={"help_option_names": ["-h", "--help"]})
+def workshop():
+    """Workshop management and testing commands."""
+    pass
+
+
+@workshop.command("start")
+@click.option("--no-browser", is_flag=True, help="Don't open the browser automatically")
+def start_cmd(no_browser: bool):
+    """Start the workshop locally."""
+    find_project_root()
+    project, workspace = load_project_context()
+    sync(workspace, project)
+    start(no_browser)
+
+
+@workshop.command("stop")
+def stop_cmd():
+    """Stop the workshop."""
+    find_project_root()
+    stop()
+
+
+@workshop.command("build")
+def build_cmd():
+    """Build the workshop container."""
+    find_project_root()
+    project, workspace = load_project_context()
+    sync(workspace, project)
+    build()
+
+
+@workshop.command("restart")
+def restart_cmd():
+    """Restart the workshop."""
+    find_project_root()
+    restart()
+
+
+@workshop.command("status")
+def status_cmd():
+    """Check the status of the workshop containers."""
+    find_project_root()
+    status()
+
+
+# Deployment Commands
+@cli.group(context_settings={"help_option_names": ["-h", "--help"]})
+def deploy():
+    """Deployment and publishing commands."""
+    pass
+
+
+@deploy.command("brev")
+@click.option("-y", "--yes", is_flag=True, help="Automatically answer yes to prompts")
+@click.option("--dry-run", is_flag=True, help="Show API request details without making the request")
+def brev_cmd(yes: bool, dry_run: bool):
+    """Create a launchable workshop on Brev."""
+    find_project_root()
+    project, workspace = load_project_context()
+    sync(workspace, project, force=True)
+    create(workspace, project, yes, dry_run)
+
+
+
 
 
 def main() -> None:
-    """Create a Brev launchable workspace."""
-    args = parse_args()
-
-    # Handle init command
-    if args.command == "init":
-        init(args)
-        return
-
-    # Find project root and change to it
-    if not go_to_project_root():
-        return
-
-    # Create project instance
-    project = Project()
-
-    # Ensure files are synced
-    workspace = BrevWorkspace()
-    if args.command == "sync":
-        sync(workspace, project, force=True)
-        return
-    sync(workspace, project)
-
-    # Handle other commands
-    if args.command == "start":
-        start(args.no_browser)
-    elif args.command == "stop":
-        stop()
-    elif args.command == "build":
-        build()
-    elif args.command == "restart":
-        restart()
-    elif args.command == "status":
-        status()
-    elif args.command == "create":
-        create(workspace, project, args.yes, args.dry_run)
+    """Main entry point."""
+    cli()
 
 
 if __name__ == "__main__":

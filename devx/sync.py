@@ -18,8 +18,7 @@ USER_COMPOSE_PATHS = [Path('compose.yaml'), Path('compose.yml')]
 USER_COMPOSE_PATH = next((path for path in USER_COMPOSE_PATHS if path.exists()), USER_COMPOSE_PATHS[0])
 LOCAL_JUPYTER_PORT = 8888
 LOCAL_ENV_FILE = Path('variables.env')
-
-ENV_INJECTION_VARS = {"NGC_API_KEY": "${NGC_API_KEY}", "COMPOSE_PROJECT_NAME": "devx"}
+ENV_INJECTION_VARS = {"NGC_API_KEY": "${NGC_API_KEY}", "COMPOSE_PROJECT_NAME": "${COMPOSE_PROJECT_NAME:-devx}"}
 
 
 def _get_docker_gid() -> int:
@@ -80,25 +79,6 @@ def _read_compose_file(compose_path: Path) -> dict:
     return compose
 
 
-def _project_port_list(ports: List[Port], jupyter_port: None | int = None) -> List[str]:
-    """Get the list of ports to expose.
-
-    Args:
-        ports: List of ports to expose.
-        jupyter_port: Port to use for Jupyter.
-
-    Returns:
-        List of ports to expose.
-    """
-    port_list = []
-    for port in ports:
-        host_port = port.port
-        if jupyter_port and port.name == "jupyter":
-            host_port = jupyter_port
-        port_list.append(f"{host_port}:{port.port}")
-    return port_list
-
-
 def compile_local_compose(compose_path: Path, ports: List[Port], jupyter_port: int) -> str:
     """Get the docker compose file content.
 
@@ -114,7 +94,7 @@ def compile_local_compose(compose_path: Path, ports: List[Port], jupyter_port: i
 
     # Add devx service
     compose['services']['devx'] = {
-        "ports": _project_port_list(ports, jupyter_port),
+        "ports": [f"{jupyter_port}:8888"],
         "ipc": "host",
         "volumes": [
             "../:/project:cached",
@@ -157,7 +137,7 @@ def compile_launchable_compose(compose_path: Path, image_url: str, ports: List[P
     repo_name = image_url.split('/')[-1]
     compose['services']['devx'] = {
         "image": image_url + f"/devx:{TARGET_BRANCH}",
-        "ports": _project_port_list(ports),
+        "ports": ["8888:8888"],
         "ipc": "host",
         "volumes": [
             f"../{repo_name}:/project:cached",
