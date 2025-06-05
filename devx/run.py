@@ -1,5 +1,6 @@
 """Workshop running functionality."""
 
+import os
 import subprocess
 import webbrowser
 from pathlib import Path
@@ -35,7 +36,10 @@ def start(no_browser: bool = False) -> None:
 
     # open browser
     if not no_browser:
-        webbrowser.open(f"http://localhost:{LOCAL_JUPYTER_PORT}")
+        ssh_connection = os.environ.get('SSH_CONNECTION', '')
+        host = ssh_connection.split()[2] if ssh_connection and len(ssh_connection.split()) > 2 else 'localhost'
+        print(f"Opening browser to http://{host}:{LOCAL_JUPYTER_PORT}")
+        webbrowser.open(f"http://{host}:{LOCAL_JUPYTER_PORT}")
 
 
 def stop() -> None:

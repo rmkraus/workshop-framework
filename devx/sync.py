@@ -17,6 +17,8 @@ USER_COMPOSE_PATHS = [Path('compose.yaml'), Path('compose.yml')]
 USER_COMPOSE_PATH = next((path for path in USER_COMPOSE_PATHS if path.exists()), USER_COMPOSE_PATHS[0])
 LOCAL_JUPYTER_PORT = 8888
 
+ENV_INJECTION_VARS = {"NGC_API_KEY": "${NGC_API_KEY}", "COMPOSE_PROJECT_NAME": "devx"}
+
 
 def _parse_env_file(env_file_path: Path) -> dict:
     """Parse environment variables from a .env file.
@@ -27,7 +29,7 @@ def _parse_env_file(env_file_path: Path) -> dict:
     Returns:
         Dictionary of environment variables with their values from the file.
     """
-    env_vars = {"NGC_API_KEY": "${NGC_API_KEY}"}  # Start with default NGC_API_KEY
+    env_vars = ENV_INJECTION_VARS.copy()
 
     if not env_file_path.exists():
         return env_vars
@@ -101,6 +103,7 @@ def compile_local_compose(compose_path: Path, ports: List[Port], jupyter_port: i
             "args": {
                 "USER_UID": str(os.getuid()),
                 "USER_GID": str(os.getgid()),
+                "DOCKER_GID": str(os.getegid()),
             }
         }
     }
