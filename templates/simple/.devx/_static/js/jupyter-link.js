@@ -135,53 +135,70 @@ function getParentDirectory(path) {
 
 
 async function goToLine(filename, lineno) {
-  const app = window.parent.jupyterapp;
+    const app = window.parent.jupyterapp;
     if (!app) {
         console.error('JupyterLab app is not available on window.jupyterapp');
         return;
     }
-  await openOrCreateFileInJupyterLab(filename);
-  app.commands.execute('fileeditor:go-to-line', { line: lineno });
+    await openOrCreateFileInJupyterLab(filename);
+    app.commands.execute('fileeditor:go-to-line', { line: lineno });
 }
 
 
 async function goToLineAndSelect(filename, searchString) {
-  const app = window.parent.jupyterapp;
+    const app = window.parent.jupyterapp;
     if (!app) {
         console.error('JupyterLab app is not available on window.jupyterapp');
         return;
     }
-  await openOrCreateFileInJupyterLab(filename);
+    await openOrCreateFileInJupyterLab(filename);
 
-  const widget = app.shell.currentWidget;
-  const editor = widget?.content?.editor;
-  const blocks = editor?.doc?.children;
+    const widget = app.shell.currentWidget;
+    const editor = widget?.content?.editor;
+    const blocks = editor?.doc?.children;
 
-  if (!editor || !blocks || !Array.isArray(blocks)) {
-    console.error("No suitable editor or document found.");
-    return;
-  }
-
-  // Flatten all lines across all blocks, tracking line numbers
-  let totalLine = 0;
-  for (const block of blocks) {
-    const lines = block.text;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(searchString)) {
-        const matchLine = totalLine;
-
-        // Select and scroll to the matched line
-        selection = {
-            start: { line: matchLine, column: 0 },
-            end: { line: matchLine, column: lines[i].length }
-        }
-        await app.commands.execute('fileeditor:go-to-line', { line: matchLine });
-        editor.setSelection(selection);
+    if (!editor || !blocks || !Array.isArray(blocks)) {
+        console.error("No suitable editor or document found.");
         return;
-      }
-      totalLine++;
     }
-  }
 
-  console.warn(`"${searchString}" not found.`);
+    // Flatten all lines across all blocks, tracking line numbers
+    let totalLine = 0;
+    for (const block of blocks) {
+        const lines = block.text;
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes(searchString)) {
+                const matchLine = totalLine;
+
+                // Select and scroll to the matched line
+                selection = {
+                    start: { line: matchLine, column: 0 },
+                    end: { line: matchLine, column: lines[i].length }
+                }
+                await app.commands.execute('fileeditor:go-to-line', { line: matchLine });
+                editor.setSelection(selection);
+                return;
+            }
+            totalLine++;
+        }
+    }
+
+    console.warn(`"${searchString}" not found.`);
+}
+
+
+async function openNewTerminal() {
+    const app = window.parent.jupyterapp;
+    if (!app) {
+        console.error('JupyterLab app is not available on window.jupyterapp');
+        return;
+    }
+
+    try {
+        const widget = await app.commands.execute('terminal:create-new');
+        console.log('New terminal opened successfully', widget);
+        return widget;
+    } catch (error) {
+        console.error('Failed to open new terminal:', error);
+    }
 }
