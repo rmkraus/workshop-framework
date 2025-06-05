@@ -45,7 +45,7 @@ def start(no_browser: bool = False) -> None:
 def stop() -> None:
     """Stop the workshop's Docker containers."""
     print("🛑 Stopping workshop...")
-    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'down'])
+    _run(['docker', 'compose', '-f', TARGET_LOCAL_FILE, 'down', '--remove-orphans'])
 
 
 def build() -> None:

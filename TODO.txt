@@ -1,2 +1,5 @@
 - [ ] kubernetes?
 - [ ] prereqs: must have HF/NGC keys
+- [ ] unit tests of the workshop
+    - check notebook compliance
+    - check markdown compliance
