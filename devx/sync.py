@@ -80,47 +80,6 @@ def _read_compose_file(compose_path: Path) -> dict:
     return compose
 
 
-
-def compile_local_compose(compose_path: Path, jupyter_port: int) -> str:
-    """Get the docker compose file content.
-
-    Args:
-        compose_path: Path to the docker compose file.
-        jupyter_port: Port to use for Jupyter.
-
-    Returns:
-        The docker compose file content.
-    """
-    compose = _read_compose_file(compose_path)
-
-    # Add devx service
-    compose['services']['devx'] = {
-        "ports": [f"{jupyter_port}:8888"],
-        "ipc": "host",
-        "volumes": [
-            "../:/project:cached",
-            "/var/run/docker.sock:/var/run/docker.sock",
-            "devx_home:/home/nvidia"
-        ],
-        "environment": _parse_env_file(Path('variables.env')),
-        "networks": ["devx"],
-        "build": {
-            "context": "../",
-            "dockerfile": "Dockerfile",
-            "args": {
-                "USER_UID": str(os.getuid()),
-                "USER_GID": str(os.getgid()),
-                "DOCKER_GID": str(_get_docker_gid()),
-            }
-        }
-    }
-
-    compose['volumes']['devx_home'] = None
-    compose['networks']['devx'] = {"driver": "bridge"}
-
-    return yaml.dump(compose)
-
-
 def _create_data_dir_watcher(compose: dict, workspace_group_id: str) -> dict:
     """Add a data watcher service that monitors and fixes permissions on new directories.
 
@@ -147,15 +106,10 @@ def _create_data_dir_watcher(compose: dict, workspace_group_id: str) -> dict:
         "image": "alpine",
         "command": [
             "sh", "-c",
-            f"""apk add --no-cache inotify-tools &&
-echo "Watching {data_dir} for new directories..." &&
+            f"""echo "Starting directory permission watcher for {data_dir}..." &&
 while true; do
-  inotifywait -m -e create --format "%w%f" "{data_dir}" | while read path; do
-    if [ -d "$path" ]; then
-      chmod 777 "$path"
-      echo "chmod 777 $path"
-    fi
-  done
+  find "{data_dir}" -type d ! -perm 777 -exec chmod 777 {{}} \\; -print 2>/dev/null || true
+  sleep 10
 done"""
         ],
         "environment": [f"DATA_DIR={data_dir}"],
@@ -164,6 +118,47 @@ done"""
     }
 
     return compose
+
+
+def compile_local_compose(compose_path: Path, jupyter_port: int) -> str:
+    """Get the docker compose file content.
+
+    Args:
+        compose_path: Path to the docker compose file.
+        jupyter_port: Port to use for Jupyter.
+
+    Returns:
+        The docker compose file content.
+    """
+    compose = _read_compose_file(compose_path)
+
+    # Add devx service
+    compose['services']['devx'] = {
+        "ports": [f"{jupyter_port}:8888"],
+        "ipc": "host",
+        "volumes": [
+            "../:/project:cached",
+            "/var/run/docker.sock:/var/run/docker.sock",
+            "devx_home:/home/nvidia"
+        ],
+        "environment": _parse_env_file(Path('variables.env')),
+        "networks": ["devx"],
+        "restart": "always",
+        "build": {
+            "context": "../",
+            "dockerfile": "Dockerfile",
+            "args": {
+                "USER_UID": str(os.getuid()),
+                "USER_GID": str(os.getgid()),
+                "DOCKER_GID": str(_get_docker_gid()),
+            }
+        }
+    }
+
+    compose['volumes']['devx_home'] = None
+    compose['networks']['devx'] = {"driver": "bridge"}
+
+    return yaml.dump(compose)
 
 
 def compile_launchable_compose(compose_path: Path, image_url: str, workspace_group_id: str) -> str:
@@ -201,6 +196,7 @@ def compile_launchable_compose(compose_path: Path, image_url: str, workspace_gro
         ],
         "environment": environment,
         "networks": ["devx"],
+        "restart": "always",
     }
 
     compose['volumes']['devx_home'] = None
