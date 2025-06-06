@@ -1,0 +1,169 @@
+# TIPS:
+# - Brev will autostart anything not assigned to a profile
+# - Services with profiles can be manually started in the lab
+# - For large volumes, reference DATA_DIR in the volumes section to allow the volumes to be relocated
+#     ```
+#     volumes:
+#       - ${DATA_DIR:+${DATA_DIR}/}my-data:/data
+#     ```
+# - Services must be on devx network
+
+services:
+  # Main application service with different GPU configurations
+  # Notice: Same hostname across all profiles for consistent networking
+  my-app-single-gpu: &my-app-base
+    hostname: my-app  # Constant hostname across all GPU configurations
+    image: nvidia/cuda:12.0-devel-ubuntu20.04
+    runtime: nvidia
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Application port
+      - "8888:8888"  # Jupyter/notebook port
+    environment:
+      - CUDA_VISIBLE_DEVICES=0  # Single GPU configuration
+      - APP_MODE=single-gpu
+      - NGC_API_KEY=${NGC_API_KEY}
+    # Portable volume pattern - works with both named volumes and bind mounts
+    volumes:
+      # If DATA_DIR is set: mounts $DATA_DIR/app-data to /workspace
+      # If DATA_DIR is not set: uses named volume 'app-data'
+      - ${DATA_DIR:+${DATA_DIR}/}app-data:/workspace
+      # Model cache - portable between environments
+      - ${DATA_DIR:+${DATA_DIR}/}model-cache:/root/.cache/models
+      # Hugging Face cache - shared across containers
+      - ${DATA_DIR:+${DATA_DIR}/}hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]  # Use first GPU only
+              capabilities: [gpu]
+    networks:
+      - devx
+    profiles: ["single-gpu"]  # Activated with: docker compose --profile single-gpu up
+
+  # Dual GPU configuration - same hostname, different GPU allocation
+  my-app-dual-gpu:
+    <<: *my-app-base  # Inherit from base configuration
+    environment:
+      - CUDA_VISIBLE_DEVICES=0,1  # Dual GPU configuration
+      - APP_MODE=dual-gpu
+      - NGC_API_KEY=${NGC_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1"]  # Use first two GPUs
+              capabilities: [gpu]
+    profiles: ["dual-gpu"]  # Activated with: docker compose --profile dual-gpu up
+
+  # Quad GPU configuration - same hostname, maximum GPU allocation
+  my-app-quad-gpu:
+    <<: *my-app-base  # Inherit from base configuration
+    environment:
+      - CUDA_VISIBLE_DEVICES=0,1,2,3  # Quad GPU configuration
+      - APP_MODE=quad-gpu
+      - NGC_API_KEY=${NGC_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1", "2", "3"]  # Use all four GPUs
+              capabilities: [gpu]
+    profiles: ["quad-gpu"]  # Activated with: docker compose --profile quad-gpu up
+
+  # Supporting service - database example
+  database:
+    hostname: app-db
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=appdb
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=apppass
+    volumes:
+      # Database data - also portable using DATA_DIR pattern
+      - ${DATA_DIR:+${DATA_DIR}/}db-data:/var/lib/postgresql/data
+    networks:
+      - devx
+    profiles: ["single-gpu", "dual-gpu", "quad-gpu"]  # Available in all configurations
+
+  # LLM Models - Llama 3.1 series with portable cache volumes
+  llama-3-1-8b-instruct:
+    hostname: llama-3-1  # Constant hostname for service discovery
+    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.3.3
+    shm_size: 16gb
+    ports:
+      - "8007:8000"
+    environment:
+      - NGC_API_KEY=${NGC_API_KEY}
+      - NIM_LOW_MEMORY_MODE=1
+      - NIM_RELAX_MEM_CONSTRAINTS=1
+    volumes:
+      # Portable NIM cache - uses DATA_DIR pattern for cross-environment compatibility
+      - ${DATA_DIR:+${DATA_DIR}/}nim-cache:/opt/nim/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]  # Use second GPU to avoid conflicts with main app
+              capabilities: [gpu]
+    extra_hosts:
+      host.docker.internal: host-gateway
+    networks:
+      - devx
+    profiles: ["dual-gpu"]  # Only available in dual+ GPU configurations
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import http.client; conn = http.client.HTTPConnection('localhost', 8000); conn.request('GET', '/v1/health/ready'); response = conn.getresponse(); exit(0 if response.status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 1800s
+
+  llama-3-1-70b-instruct:
+    hostname: llama-3-1  # Constant hostname for service discovery
+    image: nvcr.io/nim/meta/llama-3.1-70b-instruct:1.3.3
+    shm_size: 16gb
+    ports:
+      - "8008:8000"  # Different port to avoid conflicts with 8b model
+    environment:
+      - NGC_API_KEY=${NGC_API_KEY}
+      - NIM_LOW_MEMORY_MODE=1
+      - NIM_RELAX_MEM_CONSTRAINTS=1
+    volumes:
+      # Portable NIM cache - shared with other NIM models when using DATA_DIR
+      - ${DATA_DIR:+${DATA_DIR}/}nim-cache:/opt/nim/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["2", "3"]  # Use GPUs 2-3 for larger model
+              capabilities: [gpu]
+    extra_hosts:
+      host.docker.internal: host-gateway
+    networks:
+      - devx
+    profiles: ["quad-gpu"]  # Only available in quad GPU configuration
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import http.client; conn = http.client.HTTPConnection('localhost', 8000); conn.request('GET', '/v1/health/ready'); response = conn.getresponse(); exit(0 if response.status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 1800s
+
+# Named volumes - used when DATA_DIR is not set
+# When DATA_DIR is set, these become bind mounts to $DATA_DIR/volume_name
+volumes:
+  app-data: {}      # Application workspace
+  model-cache: {}   # ML model cache
+  hf-cache: {}      # Hugging Face transformers cache
+  db-data: {}       # Database storage
+  nim-cache: {}     # NVIDIA NIM model cache
+
+networks:
+  devx:
+    driver: bridge

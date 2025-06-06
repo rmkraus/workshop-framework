@@ -5,10 +5,10 @@ Tooling for building workshops quickly.
 ## Prerequisites
 
 - Docker installed and running on your system
-    - On Windows and Mac, check out (Rancher Desktop)[https://rancherdesktop.io/]
-    - On Linux, install (Docker Engine)[https://docs.docker.com/engine/install/].
+    - On Windows and Mac, check out [Rancher Desktop](https://rancherdesktop.io/)
+    - On Linux, install [Docker Engine](https://docs.docker.com/engine/install/).
 - *[OPTIONAL]* `pipx` installed on your system
-    - There are many ways to (install pipx)[https://pipx.pypa.io/stable/installation/]. Here are some common ones:
+    - There are many ways to [install pipx](https://pipx.pypa.io/stable/installation/). Here are some common ones:
         - On Windows: `python3 -m pip install --user pipx`
         - On Mac: `brew install pipx`
         - On Linux: `python3 -m pip install --user pipx`
@@ -56,7 +56,7 @@ devx init
 
 ## Update the pyproject.toml
 
-A `pyproject.toml` file will be created with the minimum amount of information required. Updated this to match your workshop. Feel free to add additional information to this file as you see fit. Where ever this file is located is considered the root of the workshop and the rest of the files are located relative to this file.
+A `pyproject.toml` file will be created with the minimum amount of information required. Update this to match your workshop. Feel free to add additional information to this file as you see fit. Wherever this file is located is considered the root of the workshop and the rest of the files are located relative to this file.
 
 ## Editing the lab manual
 
@@ -112,7 +112,7 @@ docker exec -it devx-devx-1 /bin/bash
 
 ## Publish the workshop
 
-The code on the main branch of the repo is what will be targetted by your Launchable.
+The code on the main branch of the repo is what will be targeted by your Launchable.
 
 Once you are happy with the state, synchronize the docker compose files:
 
@@ -141,7 +141,7 @@ To develop this tool, create a virtual environment and install an editable copy.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip isntall -e .
+pip install -e .
 
 devx --help
 ```

@@ -121,6 +121,17 @@ class Port(BaseModel):
         return {"name": self.name, "port": str(self.port)}
 
 
+class WorkspaceGroupConfig(BaseModel):
+    """Represents a workspace group configuration.
+
+    Attributes:
+        name: The name of the workspace group.
+        data_dir: The data directory path for the workspace group.
+    """
+    name: str
+    data_dir: Optional[Path] = None
+
+
 class Project(BaseSettings):
     """Represents a project configuration from pyproject.toml.
 

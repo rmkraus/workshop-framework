@@ -3,3 +3,4 @@
 - [ ] unit tests of the workshop
     - check notebook compliance
     - check markdown compliance
+- [ ] commands to manage labs at scale
