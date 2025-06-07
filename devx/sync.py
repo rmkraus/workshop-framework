@@ -8,7 +8,6 @@ import yaml
 from dotenv import dotenv_values
 
 from devx.models import BrevWorkspace, Project
-from devx.workspace_config import WORKSPACE_CONFIG_CONFIGS
 
 DEVX_DIR = Path('.devx')
 TARGET_BRANCH = 'main'
@@ -80,46 +79,6 @@ def _read_compose_file(compose_path: Path) -> dict:
     return compose
 
 
-def _create_data_dir_watcher(compose: dict, workspace_group_id: str) -> dict:
-    """Add a data watcher service that monitors and fixes permissions on new directories.
-
-    Args:
-        compose: The docker compose configuration dictionary.
-        workspace_group_id: The workspace group ID to get configuration for.
-
-    Returns:
-        The compose configuration with data watcher service added.
-    """
-    if workspace_group_id not in WORKSPACE_CONFIG_CONFIGS:
-        return compose
-
-    workspace_config = WORKSPACE_CONFIG_CONFIGS[workspace_group_id]
-
-    # Skip if no data directory configured
-    if workspace_config.data_dir is None:
-        return compose
-
-    data_dir = str(workspace_config.data_dir)
-
-    # Add data watcher service
-    compose['services']['data-watcher'] = {
-        "image": "alpine",
-        "command": [
-            "sh", "-c",
-            f"""echo "Starting directory permission watcher for {data_dir}..." &&
-while true; do
-  find "{data_dir}" -type d ! -perm 777 -exec chmod 777 {{}} \\; -print 2>/dev/null || true
-  sleep 10
-done"""
-        ],
-        "environment": [f"DATA_DIR={data_dir}"],
-        "volumes": [f"{data_dir}:{data_dir}"],
-        "restart": "always"
-    }
-
-    return compose
-
-
 def compile_local_compose(compose_path: Path, jupyter_port: int) -> str:
     """Get the docker compose file content.
 
@@ -150,7 +109,6 @@ def compile_local_compose(compose_path: Path, jupyter_port: int) -> str:
             "args": {
                 "USER_UID": str(os.getuid()),
                 "USER_GID": str(os.getgid()),
-                "DOCKER_GID": str(_get_docker_gid()),
             }
         }
     }
@@ -177,12 +135,6 @@ def compile_launchable_compose(compose_path: Path, image_url: str, workspace_gro
     # Get environment variables and add data directory if configured
     environment = _parse_env_file(Path('variables.env'))
 
-    # Add data directory to environment if workspace config exists
-    if workspace_group_id in WORKSPACE_CONFIG_CONFIGS:
-        workspace_config = WORKSPACE_CONFIG_CONFIGS[workspace_group_id]
-        if workspace_config.data_dir is not None:
-            environment["DATA_DIR"] = str(workspace_config.data_dir)
-
     # Add devx service
     repo_name = image_url.split('/')[-1]
     compose['services']['devx'] = {
@@ -201,8 +153,6 @@ def compile_launchable_compose(compose_path: Path, image_url: str, workspace_gro
 
     compose['volumes']['devx_home'] = None
     compose['networks']['devx'] = {"driver": "bridge"}
-
-    compose = _create_data_dir_watcher(compose, workspace_group_id)
 
     return yaml.dump(compose)
 

@@ -1,4 +1,4 @@
-"""Brev workspace creation functionality."""
+"""Brev workspace publish functionality."""
 
 import json
 import subprocess
@@ -23,8 +23,8 @@ def run_brev_org():
         raise RuntimeError(f"❌ `brev org` failed with exit code {e.returncode}") from e
 
 
-def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool = False) -> Optional[str]:
-    """Create a Brev launchable workspace.
+def publish_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool = False) -> Optional[str]:
+    """Publish a Brev launchable workspace.
 
     Args:
         workspace: The workspace configuration.
@@ -50,7 +50,7 @@ def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool 
         "createWorkspaceRequest": {
             "instanceType": workspace.instance_type,
             "workspaceGroupId": workspace.workspace_group_id,
-            "storage": workspace.storage or "",
+            "storage": str(workspace.storage or ""),
             "firewallRules": []
         },
         "buildRequest": {
@@ -81,8 +81,8 @@ def create_launchable(workspace: BrevWorkspace, project: Project, dry_run: bool 
     return response.json()
 
 
-def create(workspace: BrevWorkspace, project: Project, yes: bool, dry_run: bool) -> None:
-    """Create a launchable workshop on Brev.
+def publish(workspace: BrevWorkspace, project: Project, yes: bool, dry_run: bool) -> None:
+    """Publish a launchable workshop on Brev.
 
     Args:
         args: Command line arguments.
@@ -91,7 +91,7 @@ def create(workspace: BrevWorkspace, project: Project, yes: bool, dry_run: bool)
     """
     run_brev_org()
 
-    print("\n⚠️  About to create launchable with the following configuration:")
+    print("\n⚠️  About to publish launchable with the following configuration:")
     print(f"  - Name: {project.description}")
     print(f"  - Instance Type: {workspace.instance_type}")
     print(f"  - Workspace Group: {workspace.workspace_group_id}")
@@ -104,15 +104,15 @@ def create(workspace: BrevWorkspace, project: Project, yes: bool, dry_run: bool)
         print("❌ Aborted.")
         sys.exit(1)
 
-    print("\n📦 Creating launchable...")
-    api_response = create_launchable(workspace, project, dry_run=dry_run)
+    print("\n📦 Publishing launchable...")
+    api_response = publish_launchable(workspace, project, dry_run=dry_run)
     if not api_response or not api_response.get("id"):
         if not dry_run:
-            print("❌ Failed to create launchable.")
+            print("❌ Failed to publish launchable.")
             print(f"Server response: {api_response}")
             sys.exit(1)
         return
 
     if not dry_run:
-        print(f"\n✅ Launchable created with ID: {api_response.get('id')}")
+        print(f"\n✅ Launchable published with ID: {api_response.get('id')}")
         print(f"  ✨ https://brev.nvidia.com/launchable/deploy/now?launchableID={api_response.get('id')}")

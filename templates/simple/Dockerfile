@@ -1,9 +1,9 @@
+# This image MUST be publicly accessible w/out authentication
 FROM nvcr.io/nvidia/rapidsai/notebooks:25.04-cuda12.8-py3.12
 
 # Set build arguments for user/group IDs
 ARG USER_UID=1000
 ARG USER_GID=1000
-ARG DOCKER_GID=999
 
 # Work in the setup directory directory
 USER root
@@ -33,14 +33,13 @@ RUN pip install --no-cache-dir .
 
 # Create a non-root user and group
 # ensure our group id's have names
-RUN groupadd -r nvidia -g ${USER_GID} || true && \
-  groupadd -g ${DOCKER_GID} docker || true
+RUN groupadd -r nvidia -g ${USER_GID} || true
 # ensure a user exists with our user id
-RUN useradd -m -r -G ${USER_GID},${DOCKER_GID} -u ${USER_UID} nvidia || true
+RUN useradd -m -r -G ${USER_GID} -u ${USER_UID} nvidia || true
 # ensure the user is consistently configured
 RUN (getent passwd ${USER_UID} > /dev/null 2>&1 && \
   usermod -l nvidia -d /home/nvidia -m $(getent passwd ${USER_UID} | cut -d: -f1) && \
-  usermod -aG conda,${DOCKER_GID} nvidia) && \
+  usermod -aG conda nvidia) && \
   echo "nvidia ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
   mkdir -p /project && \
   chown -R nvidia /project
@@ -54,10 +53,14 @@ COPY .devx/jp_app_launcher.yaml /home/nvidia/.local/share/jupyter/jupyter_app_la
 # Start JupyterLab
 EXPOSE 8888
 WORKDIR /project
-CMD ["jupyter", "lab", \
-  "--ip=0.0.0.0", \
-  "--port=8888", \
-  "--no-browser", \
-  "--ServerApp.token=", \
-  "--ServerApp.password_required=False", \
-  "--expose-app-in-browser"]
+ENTRYPOINT ["/bin/bash", "-c"]
+# add the user to the host's docker group
+# run jupyter with this group membership
+CMD ["sudo usermod -aG $(stat -c %G /var/run/docker.sock) nvidia; \
+  exec sg $(stat -c %G /var/run/docker.sock) -c 'jupyter lab \
+  --ip=0.0.0.0 \
+  --port=8888 \
+  --no-browser \
+  --ServerApp.token= \
+  --ServerApp.password_required=False \
+  --expose-app-in-browser'"]

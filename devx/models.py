@@ -3,16 +3,26 @@
 import json
 import re
 import subprocess
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     PyprojectTomlConfigSettingsSource,
     SettingsConfigDict,
 )
+
+
+class Provider(str, Enum):
+    """Enum for supported cloud providers."""
+    CRUSOE = "crusoe"
+    GCP = "gcp"
+    AWS = "aws"
+    AZURE = "azure"
+    LAMBDA = "lambda"
 
 
 def _relative_to_root() -> str:
@@ -127,9 +137,17 @@ class WorkspaceGroupConfig(BaseModel):
     Attributes:
         name: The name of the workspace group.
         data_dir: The data directory path for the workspace group.
+        provider: The cloud provider for the workspace group.
+        flexible_storage: Whether the workspace supports flexible storage.
+        nvidia_driver_version: The NVIDIA driver major version number.
+        docker_gid: The Docker group ID for this workspace.
     """
     name: str
     data_dir: Optional[Path] = None
+    provider: Optional[str] = None
+    flexible_storage: bool = True
+    nvidia_driver_version: Optional[int] = None
+    docker_gid: int = 999
 
 
 class Project(BaseSettings):
@@ -173,14 +191,58 @@ class BrevWorkspace(BaseSettings):
         storage: The storage configuration for the workspace.
         ports: The port mappings for the brev workspace.
         relative_to_root: Whether the workspace is relative to the root.
+        valid_driver_versions: List of valid NVIDIA driver versions for this workspace.
+        cloud: The cloud provider for this workspace.
     """
     model_config = SettingsConfigDict(pyproject_toml_table_header=('tool', 'brev'))
 
     instance_type: str
-    workspace_group_id: str
-    storage: Optional[str] = None
+    cloud: str
+    storage: Optional[int] = None
     ports: list[Port]
     relative_to_root: str = Field(default_factory=_relative_to_root)
+    valid_driver_versions: Optional[list[int]] = None
+
+    @field_validator('cloud')
+    @classmethod
+    def validate_cloud_provider(cls, v: str, info) -> str:
+        """Validate that a workspace exists for the specified cloud provider and driver compatibility."""
+        # Convert to lowercase for consistency
+        v = v.lower()
+
+        # Import here to avoid circular imports
+        from devx.workspaces import WORKSPACES
+
+        workspace = WORKSPACES.query_provider(v)
+        if workspace is None:
+            available_providers = [ws.provider for ws in WORKSPACES._KNOWN_WORKSPACES if ws.provider]
+            raise ValueError(f"No workspace found for cloud provider '{v}'. Available providers: {available_providers}")
+
+        # Check driver version compatibility if valid_driver_versions is also specified
+        if hasattr(info, 'data') and 'valid_driver_versions' in info.data:
+            valid_driver_versions = info.data['valid_driver_versions']
+            if valid_driver_versions is not None and workspace.nvidia_driver_version is not None:
+                if workspace.nvidia_driver_version not in valid_driver_versions:
+                    raise ValueError(
+                        f"Cloud provider '{v}' has NVIDIA driver version {workspace.nvidia_driver_version}, "
+                        f"but valid versions are: {valid_driver_versions}"
+                    )
+
+        return v
+
+    @property
+    def workspace_group_id(self) -> str:
+        """Get the workspace group ID by looking up the cloud provider."""
+        # Import here to avoid circular imports
+        from devx.workspaces import WORKSPACES
+
+        workspace = WORKSPACES.query_provider(self.cloud)
+        if workspace:
+            return workspace.name
+
+        # Raise error if no matching workspace found
+        available_providers = [ws.provider for ws in WORKSPACES._KNOWN_WORKSPACES if ws.provider]
+        raise ValueError(f"No workspace found for cloud provider '{self.cloud}'. Available providers: {available_providers}")
 
     @property
     def access_token(self) -> str:
